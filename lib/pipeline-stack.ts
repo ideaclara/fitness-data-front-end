@@ -16,7 +16,7 @@ export class PipelineStack extends cdk.Stack {
     const pipeline = new pipelines.CodePipeline(this, 'WithingsPipeline', {
       pipelineName: 'Withings-Telemetry-Delivery-Pipeline',
       synth: new pipelines.ShellStep('Synth', {
-        input: pipelines.CodePipelineSource.connection('ideaclara/withings-data-on-aws', 'main', {
+        input: pipelines.CodePipelineSource.connection('ideaclara/fitness-data-front-end', 'main', {
           connectionArn: githubConnectionArn,
         }),
         commands: [

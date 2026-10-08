@@ -1,0 +1,3 @@
+{
+  "ssm:account=022074716478:parameterName=/ideaclara/cicd/github-connection-arn:region=eu-west-2": "arn:aws:codeconnections:eu-west-2:022074716478:connection/9936e281-8295-4c57-8509-ef059fee208a"
+}

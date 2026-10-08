@@ -1,29 +1,20 @@
-import React, { useEffect, useState, useMemo } from "react";
-import { TelemetryTable } from "./components/TelemetryTable";
-import { BodyCompositionTrends } from "./components/BodyCompositionTrends";
-import { MeasurementSession, TelemetryApiResponse } from "./types/telemetry";
-import {
-  Activity,
-  RefreshCw,
-  Table as TableIcon,
-  LineChart as ChartIcon,
-} from "lucide-react";
+import React, { useEffect, useState, useMemo } from 'react';
+import { TelemetryTable } from './components/TelemetryTable';
+import { BodyCompositionTrends } from './components/BodyCompositionTrends';
+import { MeasurementSession, TelemetryApiResponse } from './types/telemetry';
+import { Activity, RefreshCw, Table as TableIcon, LineChart as ChartIcon } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [data, setData] = useState<MeasurementSession[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [cursor, setCursor] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"trends" | "table">("trends");
+  const [activeTab, setActiveTab] = useState<'trends' | 'table'>('trends');
 
   const fetchTelemetry = async () => {
     setIsLoading(true);
     try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || "";
-      const url = new URL(
-        "/telemetry/measures",
-        baseUrl || window.location.origin,
-      );
-      url.searchParams.set("limit", "1000");
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+      const url = new URL('/telemetry/measures', baseUrl || window.location.origin);
+      url.searchParams.set('limit', '1000');
 
       const response = await fetch(url.toString());
       if (!response.ok) {
@@ -32,7 +23,7 @@ export const App: React.FC = () => {
       const json: TelemetryApiResponse = await response.json();
       setData(json.data);
     } catch (err) {
-      console.error("Failed to load telemetry:", err);
+      console.error('Failed to load telemetry:', err);
     } finally {
       setIsLoading(false);
     }
@@ -43,9 +34,7 @@ export const App: React.FC = () => {
   }, []);
 
   const validSessionCount = useMemo(() => {
-    const valid = data.filter(
-      (row) => row.weight_kg != null && row.weight_kg > 0,
-    );
+    const valid = data.filter((row) => row.weight_kg != null && row.weight_kg > 0);
     return new Set(valid.map((r) => r.timestamp)).size;
   }, [data]);
 
@@ -70,22 +59,22 @@ export const App: React.FC = () => {
           <div className="flex items-center gap-2">
             <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200">
               <button
-                onClick={() => setActiveTab("trends")}
+                onClick={() => setActiveTab('trends')}
                 className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition ${
-                  activeTab === "trends"
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
+                  activeTab === 'trends'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <ChartIcon className="h-3.5 w-3.5 text-blue-600" />
                 Trends & Rolling Averages
               </button>
               <button
-                onClick={() => setActiveTab("table")}
+                onClick={() => setActiveTab('table')}
                 className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition ${
-                  activeTab === "table"
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
+                  activeTab === 'table'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <TableIcon className="h-3.5 w-3.5 text-slate-600" />
@@ -98,9 +87,7 @@ export const App: React.FC = () => {
               disabled={isLoading}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 transition"
             >
-              <RefreshCw
-                className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`}
-              />
+              <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
               Refresh
             </button>
           </div>
@@ -112,18 +99,9 @@ export const App: React.FC = () => {
           <span className="text-xs font-medium text-slate-500 font-mono">
             {validSessionCount} valid measurement sessions in memory
           </span>
-          {cursor && activeTab === "table" && (
-            <button
-              onClick={() => fetchTelemetry(cursor)}
-              disabled={isLoading}
-              className="text-xs font-semibold text-slate-700 hover:text-slate-900"
-            >
-              Load Older Records &rarr;
-            </button>
-          )}
         </div>
 
-        {activeTab === "trends" ? (
+        {activeTab === 'trends' ? (
           <BodyCompositionTrends data={data} isLoading={isLoading} />
         ) : (
           <TelemetryTable data={data} isLoading={isLoading} />

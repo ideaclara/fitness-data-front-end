@@ -8,15 +8,15 @@ export const App: React.FC = () => {
   const [data, setData] = useState<MeasurementSession[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [cursor, setCursor] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'table' | 'trends'>('trends');
+  const [activeTab, setActiveTab] = useState<'trends' | 'table'>('trends');
 
   const fetchTelemetry = async (nextCursor?: string) => {
     setIsLoading(true);
     try {
       const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
       const url = new URL('/telemetry/measures', baseUrl || window.location.origin);
-      // Increased limit to 200 to give robust rolling averages across multiple weeks/months
-      url.searchParams.set('limit', '250');
+      // Fetch 750 items to span > 6 months across multiple packets per weigh-in
+      url.searchParams.set('limit', '750');
       if (nextCursor) {
         url.searchParams.set('cursor', nextCursor);
       }
@@ -62,7 +62,6 @@ export const App: React.FC = () => {
             </div>
           </div>
 
-          {/* Navigation Tabs & Actions */}
           <div className="flex items-center gap-2">
             <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200">
               <button

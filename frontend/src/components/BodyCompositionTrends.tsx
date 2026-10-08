@@ -146,13 +146,11 @@ export const BodyCompositionTrends: React.FC<BodyCompositionTrendsProps> = ({
       };
     });
 
-    // Constrain to last 6 months (183 days)
-    const latestTimestamp =
-      allProcessed.length > 0
-        ? allProcessed[allProcessed.length - 1].timestamp
-        : Math.floor(Date.now() / 1000);
-    const sixMonthsAgo = latestTimestamp - 183 * 86400;
+// Constrain to last 6 months (183 days from right now)
+    const nowEpoch = Math.floor(Date.now() / 1000);
+    const sixMonthsAgo = nowEpoch - 183 * 86400;
 
+    // Filter points falling within [today - 6 months, today]
     const filtered = allProcessed.filter((p) => p.timestamp >= sixMonthsAgo);
 
     // Collect all valid values within window to compute custom integer bounds
@@ -171,7 +169,7 @@ export const BodyCompositionTrends: React.FC<BodyCompositionTrendsProps> = ({
 
     return {
       chartData: filtered,
-      timeBounds: [sixMonthsAgo, latestTimestamp] as [number, number],
+      timeBounds: [sixMonthsAgo, nowEpoch] as [number, number],
       weightBounds: computeAxisBounds(weightVals),
       fatBounds: computeAxisBounds(fatVals),
       muscleBounds: computeAxisBounds(muscleVals),

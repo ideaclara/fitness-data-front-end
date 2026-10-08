@@ -1,19 +1,22 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { TelemetryTable } from './components/TelemetryTable';
+import { BodyCompositionTrends } from './components/BodyCompositionTrends';
 import { MeasurementSession, TelemetryApiResponse } from './types/telemetry';
-import { Activity, RefreshCw } from 'lucide-react';
+import { Activity, RefreshCw, Table as TableIcon, LineChart as ChartIcon } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [data, setData] = useState<MeasurementSession[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [cursor, setCursor] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'table' | 'trends'>('trends');
 
   const fetchTelemetry = async (nextCursor?: string) => {
     setIsLoading(true);
     try {
       const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
       const url = new URL('/telemetry/measures', baseUrl || window.location.origin);
-      url.searchParams.set('limit', '50');
+      // Increased limit to 200 to give robust rolling averages across multiple weeks/months
+      url.searchParams.set('limit', '200');
       if (nextCursor) {
         url.searchParams.set('cursor', nextCursor);
       }
@@ -36,7 +39,6 @@ export const App: React.FC = () => {
     fetchTelemetry();
   }, []);
 
-  // Compute unique session count matching the table filter
   const validSessionCount = useMemo(() => {
     const valid = data.filter((row) => row.weight_kg != null && row.weight_kg > 0);
     return new Set(valid.map((r) => r.timestamp)).size;
@@ -45,37 +47,66 @@ export const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="border-b border-slate-200 bg-white sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-lg bg-slate-900 text-white">
               <Activity className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="text-lg font-bold tracking-tight text-slate-900">
+              <h1 className="text-base font-bold tracking-tight text-slate-900">
                 Withings Health Telemetry
               </h1>
-              <p className="text-xs text-slate-500">
-                DynamoDB Session Feed (eu-west-2)
+              <p className="text-[11px] text-slate-500 font-mono">
+                DynamoDB Telemetry Pipeline (eu-west-2)
               </p>
             </div>
           </div>
-          <button
-            onClick={() => fetchTelemetry()}
-            disabled={isLoading}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 transition"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
+
+          {/* Navigation Tabs & Actions */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200">
+              <button
+                onClick={() => setActiveTab('trends')}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition ${
+                  activeTab === 'trends'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <ChartIcon className="h-3.5 w-3.5 text-blue-600" />
+                Trends & Rolling Averages
+              </button>
+              <button
+                onClick={() => setActiveTab('table')}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition ${
+                  activeTab === 'table'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <TableIcon className="h-3.5 w-3.5 text-slate-600" />
+                Table Log
+              </button>
+            </div>
+
+            <button
+              onClick={() => fetchTelemetry()}
+              disabled={isLoading}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 transition"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+          </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-4 flex items-center justify-between">
-          <span className="text-xs font-medium text-slate-500">
-            Showing {validSessionCount} valid measurement sessions
+          <span className="text-xs font-medium text-slate-500 font-mono">
+            {validSessionCount} valid measurement sessions in memory
           </span>
-          {cursor && (
+          {cursor && activeTab === 'table' && (
             <button
               onClick={() => fetchTelemetry(cursor)}
               disabled={isLoading}
@@ -85,7 +116,12 @@ export const App: React.FC = () => {
             </button>
           )}
         </div>
-        <TelemetryTable data={data} isLoading={isLoading} />
+
+        {activeTab === 'trends' ? (
+          <BodyCompositionTrends data={data} isLoading={isLoading} />
+        ) : (
+          <TelemetryTable data={data} isLoading={isLoading} />
+        )}
       </main>
     </div>
   );

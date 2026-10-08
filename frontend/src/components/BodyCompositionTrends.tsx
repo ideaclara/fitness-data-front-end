@@ -10,22 +10,11 @@ import {
   Legend,
 } from 'recharts';
 import { MeasurementSession } from '../types/telemetry';
-import { Sliders, Calendar } from 'lucide-react';
+import { Sliders } from 'lucide-react';
 
 interface BodyCompositionTrendsProps {
   data: MeasurementSession[];
   isLoading: boolean;
-}
-
-interface ChartDataPoint {
-  timestamp: number;
-  dateStr: string;
-  weight_kg?: number;
-  fat_kg?: number;
-  muscle_kg?: number;
-  weight_ma?: number;
-  fat_ma?: number;
-  muscle_ma?: number;
 }
 
 /**
@@ -69,7 +58,7 @@ export const BodyCompositionTrends: React.FC<BodyCompositionTrendsProps> = ({
 }) => {
   const [rollingDays, setRollingDays] = useState<number>(7);
 
-  // 1. Filter, deduplicate, compute rolling averages, and window to 6 months
+  // Filter, deduplicate, compute rolling averages, and window to 6 months
   const { chartData, timeBounds, weightBounds, fatBounds, muscleBounds } = useMemo(() => {
     // Drop records without valid positive weight
     const valid = data.filter((row) => row.weight_kg != null && row.weight_kg > 0);
@@ -139,9 +128,18 @@ export const BodyCompositionTrends: React.FC<BodyCompositionTrendsProps> = ({
       return {
         timestamp: current.timestamp,
         dateStr,
-        weight_kg: current.weight_kg != null && current.weight_kg > 0 ? Number(current.weight_kg.toFixed(2)) : undefined,
-        fat_kg: current.fat_mass_weight_kg != null && current.fat_mass_weight_kg > 0 ? Number(current.fat_mass_weight_kg.toFixed(2)) : undefined,
-        muscle_kg: current.muscle_mass_kg != null && current.muscle_mass_kg > 0 ? Number(current.muscle_mass_kg.toFixed(2)) : undefined,
+        weight_kg:
+          current.weight_kg != null && current.weight_kg > 0
+            ? Number(current.weight_kg.toFixed(2))
+            : undefined,
+        fat_kg:
+          current.fat_mass_weight_kg != null && current.fat_mass_weight_kg > 0
+            ? Number(current.fat_mass_weight_kg.toFixed(2))
+            : undefined,
+        muscle_kg:
+          current.muscle_mass_kg != null && current.muscle_mass_kg > 0
+            ? Number(current.muscle_mass_kg.toFixed(2))
+            : undefined,
         weight_ma: calcAverage((r) => r.weight_kg),
         fat_ma: calcAverage((r) => r.fat_mass_weight_kg),
         muscle_ma: calcAverage((r) => r.muscle_mass_kg),
@@ -149,9 +147,10 @@ export const BodyCompositionTrends: React.FC<BodyCompositionTrendsProps> = ({
     });
 
     // Constrain to last 6 months (183 days)
-    const latestTimestamp = allProcessed.length > 0
-      ? allProcessed[allProcessed.length - 1].timestamp
-      : Math.floor(Date.now() / 1000);
+    const latestTimestamp =
+      allProcessed.length > 0
+        ? allProcessed[allProcessed.length - 1].timestamp
+        : Math.floor(Date.now() / 1000);
     const sixMonthsAgo = latestTimestamp - 183 * 86400;
 
     const filtered = allProcessed.filter((p) => p.timestamp >= sixMonthsAgo);
@@ -179,7 +178,6 @@ export const BodyCompositionTrends: React.FC<BodyCompositionTrendsProps> = ({
     };
   }, [data, rollingDays]);
 
-  // Format epoch timestamps for the synchronized X-Axis
   const formatXAxis = (epoch: number) => {
     return new Date(epoch * 1000).toLocaleDateString('en-GB', {
       timeZone: 'Europe/London',
@@ -237,7 +235,7 @@ export const BodyCompositionTrends: React.FC<BodyCompositionTrendsProps> = ({
               6-Month Horizon | Solid: recorded weigh-in | Dotted: {rollingDays}-day average
             </p>
           </div>
-          <span className="text-[11px] font-mono text-slate-400">Unit: 1 kg / div</span>
+          <span className="text-[11px] font-mono text-slate-400">Whole kg intervals</span>
         </div>
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
@@ -420,4 +418,32 @@ export const BodyCompositionTrends: React.FC<BodyCompositionTrendsProps> = ({
                   fontSize: '12px',
                 }}
                 formatter={(value: any, name: any) => [`${value} kg`, name]}
-                labelFormatter={(label) => `Date: ${formatXAxis
+                labelFormatter={(label) => `Date: ${formatXAxis(Number(label))}`}
+              />
+              <Legend wrapperStyle={{ fontSize: '11px' }} iconType="plainline" />
+              <Line
+                type="monotone"
+                dataKey="muscle_kg"
+                name="Muscle Mass (Actual)"
+                stroke="#16a34a"
+                strokeWidth={2}
+                dot={{ r: 2, fill: '#16a34a' }}
+                connectNulls={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="muscle_ma"
+                name={`Muscle Mass (${rollingDays}d Avg)`}
+                stroke="#16a34a"
+                strokeWidth={2}
+                strokeDasharray="4 4"
+                dot={false}
+                connectNulls={true}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </div>
+  );
+};

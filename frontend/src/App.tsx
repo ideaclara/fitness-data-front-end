@@ -16,7 +16,7 @@ export const App: React.FC = () => {
       const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
       const url = new URL('/telemetry/measures', baseUrl || window.location.origin);
       // Increased limit to 200 to give robust rolling averages across multiple weeks/months
-      url.searchParams.set('limit', '200');
+      url.searchParams.set('limit', '250');
       if (nextCursor) {
         url.searchParams.set('cursor', nextCursor);
       }

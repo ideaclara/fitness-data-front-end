@@ -34,7 +34,6 @@ export const BodyCompositionTrends: React.FC<BodyCompositionTrendsProps> = ({
 }) => {
   const [rollingDays, setRollingDays] = useState<number>(7);
 
-  // 1. Sanitize, deduplicate, compute kg values, and order chronologically (oldest to newest)
   const chartData = useMemo(() => {
     const valid = data.filter((row) => row.weight_kg != null && row.weight_kg > 0);
 
@@ -63,13 +62,11 @@ export const BodyCompositionTrends: React.FC<BodyCompositionTrendsProps> = ({
       (a, b) => a.timestamp - b.timestamp
     );
 
-    // 2. Compute calendar-day time-window rolling averages
     const windowSeconds = rollingDays * 86400;
 
-    return chronological.map((current, idx, arr): ChartDataPoint => {
+    return chronological.map((current, _, arr): ChartDataPoint => {
       const windowStart = current.timestamp - windowSeconds;
 
-      // Find all sessions falling inside [t - X days, t]
       const windowRecords = arr.filter(
         (r) => r.timestamp >= windowStart && r.timestamp <= current.timestamp
       );
@@ -121,7 +118,6 @@ export const BodyCompositionTrends: React.FC<BodyCompositionTrendsProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Control Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className="flex items-center gap-2">
           <Sliders className="h-4 w-4 text-slate-600" />
@@ -148,7 +144,6 @@ export const BodyCompositionTrends: React.FC<BodyCompositionTrendsProps> = ({
         </div>
       </div>
 
-      {/* Main Chart Canvas */}
       <div className="w-full rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="mb-6 flex items-center justify-between">
           <div>
@@ -201,7 +196,7 @@ export const BodyCompositionTrends: React.FC<BodyCompositionTrendsProps> = ({
                 iconType="plainline"
               />
 
-              {/* Mass (Blue: #2563eb) */}
+              {/* Mass (Blue) */}
               <Line
                 type="monotone"
                 dataKey="weight_kg"
@@ -221,7 +216,7 @@ export const BodyCompositionTrends: React.FC<BodyCompositionTrendsProps> = ({
                 dot={false}
               />
 
-              {/* Fat Mass (Red: #dc2626) */}
+              {/* Fat Mass (Red) */}
               <Line
                 type="monotone"
                 dataKey="fat_kg"
@@ -241,7 +236,7 @@ export const BodyCompositionTrends: React.FC<BodyCompositionTrendsProps> = ({
                 dot={false}
               />
 
-              {/* Muscle Mass (Green: #16a34a) */}
+              {/* Muscle Mass (Green) */}
               <Line
                 type="monotone"
                 dataKey="muscle_kg"

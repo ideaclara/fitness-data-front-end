@@ -2,6 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as pipelines from 'aws-cdk-lib/pipelines';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
+import * as codebuild from 'aws-cdk-lib/aws-codebuild';
 import { AppDeploymentStage } from './app-stage';
 
 export class PipelineStack extends cdk.Stack {
@@ -24,6 +25,11 @@ export class PipelineStack extends cdk.Stack {
           'npx cdk synth',
         ],
       }),
+      codeBuildDefaults: {
+        buildEnvironment: {
+          buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
+        },
+      },
       selfMutation: true,
       dockerEnabledForSynth: false,
     });

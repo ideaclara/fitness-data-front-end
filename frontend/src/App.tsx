@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { TelemetryTable } from './components/TelemetryTable';
 import { MeasurementSession, TelemetryApiResponse } from './types/telemetry';
 import { Activity, RefreshCw } from 'lucide-react';
@@ -36,6 +36,12 @@ export const App: React.FC = () => {
     fetchTelemetry();
   }, []);
 
+  // Compute unique session count matching the table filter
+  const validSessionCount = useMemo(() => {
+    const valid = data.filter((row) => row.weight_kg != null && row.weight_kg > 0);
+    return new Set(valid.map((r) => r.timestamp)).size;
+  }, [data]);
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="border-b border-slate-200 bg-white sticky top-0 z-10">
@@ -49,7 +55,7 @@ export const App: React.FC = () => {
                 Withings Health Telemetry
               </h1>
               <p className="text-xs text-slate-500">
-                Direct DynamoDB Session Feed (eu-west-2)
+                DynamoDB Session Feed (eu-west-2)
               </p>
             </div>
           </div>
@@ -67,7 +73,7 @@ export const App: React.FC = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-4 flex items-center justify-between">
           <span className="text-xs font-medium text-slate-500">
-            Showing {data.length} telemetry records
+            Showing {validSessionCount} valid measurement sessions
           </span>
           {cursor && (
             <button

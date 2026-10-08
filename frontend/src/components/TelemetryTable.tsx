@@ -22,6 +22,40 @@ export const TelemetryTable: React.FC<TelemetryTableProps> = ({ data, isLoading 
     { id: 'timestamp', desc: true },
   ]);
 
+  // Filter out ghost rows (no weight) and merge records sharing the same timestamp
+  const sanitizedData = useMemo(() => {
+    const validRows = data.filter((row) => row.weight_kg != null && row.weight_kg > 0);
+
+    // Group by timestamp to collapse multi-packet Withings sessions
+    const sessionMap = new Map<number, MeasurementSession>();
+
+    for (const row of validRows) {
+      const existing = sessionMap.get(row.timestamp);
+      if (!existing) {
+        sessionMap.set(row.timestamp, { ...row });
+      } else {
+        // Merge missing metrics into existing record
+        sessionMap.set(row.timestamp, {
+          ...existing,
+          weight_kg: existing.weight_kg ?? row.weight_kg,
+          fat_ratio_pct: existing.fat_ratio_pct ?? row.fat_ratio_pct,
+          fat_mass_weight_kg: existing.fat_mass_weight_kg ?? row.fat_mass_weight_kg,
+          fat_free_mass_kg: existing.fat_free_mass_kg ?? row.fat_free_mass_kg,
+          muscle_mass_kg: existing.muscle_mass_kg ?? row.muscle_mass_kg,
+          hydration_kg: existing.hydration_kg ?? row.hydration_kg,
+          bone_mass_kg: existing.bone_mass_kg ?? row.bone_mass_kg,
+          heart_pulse_bpm: existing.heart_pulse_bpm ?? row.heart_pulse_bpm,
+          pulse_wave_velocity_raw_ms: existing.pulse_wave_velocity_raw_ms ?? row.pulse_wave_velocity_raw_ms,
+          pulse_wave_velocity_normalized_ms: existing.pulse_wave_velocity_normalized_ms ?? row.pulse_wave_velocity_normalized_ms,
+          vascular_age_yrs: existing.vascular_age_yrs ?? row.vascular_age_yrs,
+          device_model: existing.device_model || row.device_model,
+        });
+      }
+    }
+
+    return Array.from(sessionMap.values());
+  }, [data]);
+
   const columns = useMemo(
     () => [
       columnHelper.accessor('timestamp', {
@@ -31,15 +65,14 @@ export const TelemetryTable: React.FC<TelemetryTableProps> = ({ data, isLoading 
           if (!epoch) return '-';
           const date = new Date(epoch * 1000);
 
-          const iso = date.toISOString().replace('T', ' ').substring(0, 19);
-
-          const londonDate = date.toLocaleDateString('en-GB', {
+          // UK Local Time formatted cleanly as: "08 Oct 2026 07:44:38"
+          const dateStr = date.toLocaleDateString('en-GB', {
             timeZone: 'Europe/London',
             day: '2-digit',
             month: 'short',
             year: 'numeric',
           });
-          const londonTime = date.toLocaleTimeString('en-GB', {
+          const timeStr = date.toLocaleTimeString('en-GB', {
             timeZone: 'Europe/London',
             hour: '2-digit',
             minute: '2-digit',
@@ -48,14 +81,9 @@ export const TelemetryTable: React.FC<TelemetryTableProps> = ({ data, isLoading 
           });
 
           return (
-            <div className="flex flex-col py-0.5">
-              <span className="font-mono text-xs font-semibold text-slate-900">
-                {londonDate} {londonTime} <span className="text-[10px] text-slate-400 font-normal">UK</span>
-              </span>
-              <span className="font-mono text-[11px] text-slate-500">
-                {iso}Z
-              </span>
-            </div>
+            <span className="font-mono text-xs font-semibold text-slate-900">
+              {dateStr} {timeStr}
+            </span>
           );
         },
       }),
@@ -144,7 +172,7 @@ export const TelemetryTable: React.FC<TelemetryTableProps> = ({ data, isLoading 
   );
 
   const table = useReactTable({
-    data,
+    data: sanitizedData,
     columns,
     state: { sorting },
     onSortingChange: setSorting,

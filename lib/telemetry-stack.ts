@@ -6,13 +6,14 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as apigwv2 from 'aws-cdk-lib/aws-apigatewayv2';
 import * as apigwIntegrations from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import * as amplify from '@aws-cdk/aws-amplify-alpha';
+import * as codebuild from 'aws-cdk-lib/aws-codebuild';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 
 export class TelemetryStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // 1. Reference Existing DynamoDB Table
+    // 1. Reference Existing Pay-Per-Request DynamoDB Table
     const telemetryTable = dynamodb.Table.fromTableName(
       this,
       'ImportedWithingsTelemetryTable',
@@ -35,7 +36,7 @@ export class TelemetryStack extends cdk.Stack {
 
     telemetryTable.grantReadData(queryHandler);
 
-    // 3. API Gateway HTTP API (v2) with strict CORS
+    // 3. Amazon API Gateway HTTP API (v2) with strict CORS
     const httpApi = new apigwv2.HttpApi(this, 'WithingsTelemetryHttpApi', {
       apiName: 'withings-telemetry-api',
       corsPreflight: {
@@ -71,13 +72,44 @@ export class TelemetryStack extends cdk.Stack {
       appName: 'withings-health-dashboard',
       sourceCodeProvider: new amplify.GitHubSourceCodeProvider({
         owner: 'ideaclara',
-        repository: 'fitness-data-front-end',
+        repository: 'withings-data-on-aws',
         oauthToken: githubToken,
       }),
       environmentVariables: {
         VITE_API_BASE_URL: httpApi.apiEndpoint,
         AMPLIFY_MONOREPO_APP_ROOT: 'frontend',
       },
+      customRules: [
+        amplify.CustomRule.SINGLE_PAGE_APPLICATION_REDIRECT,
+      ],
+      buildSpec: codebuild.BuildSpec.fromObjectToYaml({
+        version: 1,
+        applications: [
+          {
+            appRoot: 'frontend',
+            frontend: {
+              phases: {
+                preBuild: {
+                  commands: ['npm ci'],
+                },
+                build: {
+                  commands: [
+                    'env | grep -E "^VITE_" >> .env.production',
+                    'npm run build',
+                  ],
+                },
+              },
+              artifacts: {
+                baseDirectory: 'dist',
+                files: ['**/*'],
+              },
+              cache: {
+                paths: ['node_modules/**/*'],
+              },
+            },
+          },
+        ],
+      }),
     });
 
     const mainBranch = amplifyApp.addBranch('main', {

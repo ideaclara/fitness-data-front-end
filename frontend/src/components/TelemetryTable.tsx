@@ -22,31 +22,41 @@ export const TelemetryTable: React.FC<TelemetryTableProps> = ({ data, isLoading 
     { id: 'timestamp', desc: true },
   ]);
 
-  // Filter out ghost rows (no weight) and merge records sharing the same timestamp
+  // Filter ghost records, deduplicate timestamps, and ensure kg values
   const sanitizedData = useMemo(() => {
     const validRows = data.filter((row) => row.weight_kg != null && row.weight_kg > 0);
 
-    // Group by timestamp to collapse multi-packet Withings sessions
     const sessionMap = new Map<number, MeasurementSession>();
 
     for (const row of validRows) {
       const existing = sessionMap.get(row.timestamp);
+      
+      // Compute fat_mass_weight_kg if missing from fat_ratio_pct
+      const resolvedFatKg =
+        row.fat_mass_weight_kg ??
+        (row.weight_kg != null && row.fat_ratio_pct != null
+          ? Number(((row.weight_kg * row.fat_ratio_pct) / 100).toFixed(2))
+          : undefined);
+
       if (!existing) {
-        sessionMap.set(row.timestamp, { ...row });
+        sessionMap.set(row.timestamp, {
+          ...row,
+          fat_mass_weight_kg: resolvedFatKg,
+        });
       } else {
-        // Merge missing metrics into existing record
         sessionMap.set(row.timestamp, {
           ...existing,
           weight_kg: existing.weight_kg ?? row.weight_kg,
-          fat_ratio_pct: existing.fat_ratio_pct ?? row.fat_ratio_pct,
-          fat_mass_weight_kg: existing.fat_mass_weight_kg ?? row.fat_mass_weight_kg,
+          fat_mass_weight_kg: existing.fat_mass_weight_kg ?? resolvedFatKg,
           fat_free_mass_kg: existing.fat_free_mass_kg ?? row.fat_free_mass_kg,
           muscle_mass_kg: existing.muscle_mass_kg ?? row.muscle_mass_kg,
           hydration_kg: existing.hydration_kg ?? row.hydration_kg,
           bone_mass_kg: existing.bone_mass_kg ?? row.bone_mass_kg,
           heart_pulse_bpm: existing.heart_pulse_bpm ?? row.heart_pulse_bpm,
-          pulse_wave_velocity_raw_ms: existing.pulse_wave_velocity_raw_ms ?? row.pulse_wave_velocity_raw_ms,
-          pulse_wave_velocity_normalized_ms: existing.pulse_wave_velocity_normalized_ms ?? row.pulse_wave_velocity_normalized_ms,
+          pulse_wave_velocity_raw_ms:
+            existing.pulse_wave_velocity_raw_ms ?? row.pulse_wave_velocity_raw_ms,
+          pulse_wave_velocity_normalized_ms:
+            existing.pulse_wave_velocity_normalized_ms ?? row.pulse_wave_velocity_normalized_ms,
           vascular_age_yrs: existing.vascular_age_yrs ?? row.vascular_age_yrs,
           device_model: existing.device_model || row.device_model,
         });
@@ -65,7 +75,6 @@ export const TelemetryTable: React.FC<TelemetryTableProps> = ({ data, isLoading 
           if (!epoch) return '-';
           const date = new Date(epoch * 1000);
 
-          // UK Local Time formatted cleanly as: "08 Oct 2026 07:44:38"
           const dateStr = date.toLocaleDateString('en-GB', {
             timeZone: 'Europe/London',
             day: '2-digit',
@@ -95,11 +104,11 @@ export const TelemetryTable: React.FC<TelemetryTableProps> = ({ data, isLoading 
           </span>
         ),
       }),
-      columnHelper.accessor('fat_ratio_pct', {
-        header: 'Body Fat',
+      columnHelper.accessor('fat_mass_weight_kg', {
+        header: 'Fat Mass',
         cell: (info) => (
           <span className="font-mono text-slate-700">
-            {info.getValue() != null ? `${info.getValue()!.toFixed(1)}%` : '-'}
+            {info.getValue() != null ? `${info.getValue()!.toFixed(2)} kg` : '-'}
           </span>
         ),
       }),

@@ -19,7 +19,7 @@ export class TelemetryStack extends cdk.Stack {
       'WithingsTelemetry'
     );
 
-    // 2. Read Query Lambda (Python 3.12, ARM64 Graviton)
+    // 2. Read-optimized Python Lambda Query Function (ARM64 Graviton)
     const queryHandler = new lambda.Function(this, 'GetMeasuresHandler', {
       runtime: lambda.Runtime.PYTHON_3_12,
       architecture: lambda.Architecture.ARM_64,
@@ -60,11 +60,11 @@ export class TelemetryStack extends cdk.Stack {
       integration: lambdaIntegration,
     });
 
-    // 4. AWS Amplify Hosting (Monorepo setup pointing to frontend/)
+    // 4. AWS Amplify Hosting
     const githubToken = secretsmanager.Secret.fromSecretNameV2(
       this,
-      'GitHubPatAmplify',
-      'github-token-amplify'
+      'IdeaclaraGitHubPat',
+      'ideaclara/github-pat'
     ).secretValue;
 
     const amplifyApp = new amplify.App(this, 'WithingsDashboardAmplify', {

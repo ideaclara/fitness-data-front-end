@@ -30,7 +30,7 @@ export const TelemetryTable: React.FC<TelemetryTableProps> = ({ data, isLoading 
           const epoch = info.getValue();
           if (!epoch) return '-';
           const date = new Date(epoch * 1000);
-          
+
           const iso = date.toISOString().replace('T', ' ').substring(0, 19);
 
           const londonDate = date.toLocaleDateString('en-GB', {

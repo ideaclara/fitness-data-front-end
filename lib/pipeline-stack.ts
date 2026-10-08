@@ -1,14 +1,17 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as pipelines from 'aws-cdk-lib/pipelines';
+import * as ssm from 'aws-cdk-lib/aws-ssm';
 import { AppDeploymentStage } from './app-stage';
 
 export class PipelineStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // CodeConnections/CodeStar ARN exported or imported from SSM
-    const githubConnectionArn = cdk.Fn.importValue('WithingsGithubConnectionArn');
+    const githubConnectionArn = ssm.StringParameter.valueFromLookup(
+      this,
+      '/ideaclara/cicd/github-connection-arn'
+    );
 
     const pipeline = new pipelines.CodePipeline(this, 'WithingsPipeline', {
       pipelineName: 'Withings-Telemetry-Delivery-Pipeline',
@@ -27,7 +30,7 @@ export class PipelineStack extends cdk.Stack {
 
     pipeline.addStage(new AppDeploymentStage(this, 'Prod', {
       env: {
-        account: process.env.CDK_DEFAULT_ACCOUNT,
+        account: '022074716478',
         region: 'eu-west-2',
       },
     }));

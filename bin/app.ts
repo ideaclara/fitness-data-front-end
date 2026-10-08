@@ -7,10 +7,10 @@ const app = new cdk.App();
 
 new PipelineStack(app, 'WithingsPipelineStack', {
   env: {
-    account: process.env.CDK_DEFAULT_ACCOUNT,
+    account: '022074716478',
     region: 'eu-west-2',
   },
-  description: 'Self-mutating CI/CD Pipeline for Withings Telemetry Dashboard',
+  description: 'Self-mutating CI/CD Pipeline for Withings Telemetry Delivery',
 });
 
 app.synth();

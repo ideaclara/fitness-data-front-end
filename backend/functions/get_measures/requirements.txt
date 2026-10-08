@@ -1,0 +1,1 @@
+# Standard library and built-in boto3 provided by AWS Lambda Python 3.12 runtime
